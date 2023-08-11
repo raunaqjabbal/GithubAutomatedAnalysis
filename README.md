@@ -1,2 +1,2 @@
-# GithubAutomatedanalysis
+# GithubAutomatedAnalysis
  

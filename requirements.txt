@@ -1,0 +1,8 @@
+numpy
+shutil
+tqdm
+stqdm
+streamlit
+git
+stat
+regex

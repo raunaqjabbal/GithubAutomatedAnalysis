@@ -1,4 +1,4 @@
-# GithubAutomatedanalysis
+# GithubAutomatedAnalysis
  
 gcloud builds submit --tag gcr.io/peak-woodland-395617/analysis  --project=peak-woodland-395617
 

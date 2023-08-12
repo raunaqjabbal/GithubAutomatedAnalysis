@@ -41,9 +41,9 @@ exclude = st.sidebar.text_input("Enter file extensions to exclude", value="xlsx,
 
 
 
-openai_key = st.sidebar.text_input("Enter OpenAI Key", value = "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")
+openai_key = st.sidebar.text_input("Enter OpenAI Key")
 
-github_api_key = st.sidebar.text_input("Enter GitHub Key", value = "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")
+github_api_key = st.sidebar.text_input("Enter GitHub Key")
 
 col1, col2, col3 = st.sidebar.columns([1,1,1])
 

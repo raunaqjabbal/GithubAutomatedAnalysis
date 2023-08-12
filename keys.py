@@ -1,2 +1,0 @@
-github_api_key = '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'
-openai_key = "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"

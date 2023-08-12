@@ -8,54 +8,26 @@ import requests
 import stat
 import numpy as np
 
-@st.cache_data
-def output(gpt_answer, uid):
-    # Obtain username
-    id = os.path.split(uid)[1]
-    result=[]
-    
-    # Find ChatGPT mentioning any repository and create URL
-    for i in os.listdir(uid):
-        if(re.search(i,gpt_answer)):
-            result.append(f"https://github.com/{id}/{i}")
-    
-    return result
 
 @st.cache_data
-def call_chatgpt(query, key):
-    # THis code calls OpenAI passing it the query, telling the model to figure out the most complex repository
-    header = st.header("Calling ChatGPT")
-
-    if os.path.isfile("keys"):
-        import keys
-        key = keys.openai_key
+def download_data(response, uid):
+    # All repositories that are forks are ignored
+    data = []
+    for i in response:
+        if i['fork']== False:
+            data.append(i)
     
-    message_list=[{"role": "user", "content": "Tell me the most complex repository from this data and justify your answer: "+ query}]
+    # repositories are downloaded
+    header = st.header("Fetching Repositories")
+    for i in stqdm(data):
+        # Repo.clone_from(i['clone_url'], os.path.join(os.getcwd(), uid, i['name']))
+        try:
+            Repo.clone_from(i['clone_url'], os.path.join(os.getcwd(), uid, i['name']))
+        except:
+            repo_name = i["name"]
+    
+    st.success(f"Fetched {len(os.listdir(uid))} Repositories")        
 
-    data = {
-        "model": "gpt-3.5-turbo",
-        "temperature": 0.9,
-        "messages": message_list
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {key}"
-}
-
-
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-    response_json = response.json()
-
-    if response.status_code == 200:
-        content = [choice['message']['content'] for choice in response_json['choices']]
-        print(content)
-        st.success(f"Sucessfully called ChatGPT")        
-
-        return content[0]
-
-    else:
-        st.error(f"Request failed with status code {response.status_code}: {response_json}")
-        return None
 
 @st.cache_data
 def get_repo_summary(uid, exclude):
@@ -77,30 +49,9 @@ def get_repo_summary(uid, exclude):
     
     return solutions
 
-@st.cache_data
-def get_query(solutions):
-    # All summaries are merged and converted to string form to give to OpenAI
-    query = ""
-    for i in solutions:
-
-        for key, value in i['Summary'].items():
-            # print(f"{key}: {value}")
-            query+= f"{key}: {value}\n"
-            
-        for lang, info in i['Language Breakdown'].items():
-            query+= f"{lang}: Files- {info['Files']}, Blank- {info['Blank']}, Comment- {info['Comment']}, Code- {info['Code']}\n"
-        # print("\n\n\n\n")
-        query+= "\n\n"
-    
-    st.success(f"Fetched Summaries")        
-
-    return query
-
-
 
 
 @st.cache_data
-
 def parse_cloc_output(output, name):
     # Recieves string output from cloc and converts response into structured data
     
@@ -164,26 +115,77 @@ def parse_cloc_output(output, name):
     }
 
 
+@st.cache_data
+def get_query(solutions):
+    # All summaries are merged and converted to string form to give to OpenAI
+    query = ""
+    for i in solutions:
 
-def download_data(response, uid):
+        for key, value in i['Summary'].items():
+            # print(f"{key}: {value}")
+            query+= f"{key}: {value}\n"
+            
+        for lang, info in i['Language Breakdown'].items():
+            query+= f"{lang}: Files- {info['Files']}, Blank- {info['Blank']}, Comment- {info['Comment']}, Code- {info['Code']}\n"
+        # print("\n\n\n\n")
+        query+= "\n\n"
     
-    # All repositories that are forks are ignored
-    data = []
-    for i in response:
-        if i['fork']== False:
-            data.append(i)
+    st.success(f"Fetched Summaries")        
+
+    return query
+
+
+
+@st.cache_data
+def call_chatgpt(query, key):
+    # THis code calls OpenAI passing it the query, telling the model to figure out the most complex repository
+    header = st.header("Calling ChatGPT")
+
+    if os.path.isfile("keys"):
+        import keys
+        key = keys.openai_key
     
-    # repositories are downloaded
-    header = st.header("Fetching Repositories")
-    for i in stqdm(data):
-        # Repo.clone_from(i['clone_url'], os.path.join(os.getcwd(), uid, i['name']))
-        try:
-            Repo.clone_from(i['clone_url'], os.path.join(os.getcwd(), uid, i['name']))
-        except:
-            repo_name = i["name"]
+    message_list=[{"role": "user", "content": "Tell me the most complex repository from this data and justify your answer: "+ query}]
+
+    data = {
+        "model": "gpt-3.5-turbo",
+        "temperature": 0.9,
+        "messages": message_list
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {key}"
+}
+
+
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+    response_json = response.json()
+
+    if response.status_code == 200:
+        content = [choice['message']['content'] for choice in response_json['choices']]
+        print(content)
+        st.success(f"Sucessfully called ChatGPT")        
+
+        return content[0]
+
+    else:
+        st.error(f"Request failed with status code {response.status_code}: {response_json}")
+        return None
+
+
+@st.cache_data
+def output(gpt_answer, uid):
+    # Obtain username
+    id = os.path.split(uid)[1]
+    result=[]
     
-    st.success(f"Fetched {len(os.listdir(uid))} Repositories")        
+    # Find ChatGPT mentioning any repository and create URL
+    for i in os.listdir(uid):
+        if(re.search(i,gpt_answer)):
+            result.append(f"https://github.com/{id}/{i}")
     
+    return result
+
 def rmtree():
     # clears all repositories from all users 
     for root, dirs, files in os.walk("data", topdown=False):

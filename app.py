@@ -14,23 +14,16 @@ from process import parse_cloc_output, download_data, get_query, get_repo_summar
 import requests
 
 
-st.title("Github Automated Analysis")
-
-            
-
+st.title("GitHub Automated Analysis")
 os.system("chmod 777 cloc")
 
 st.sidebar.header("How it works...")
 st.sidebar.text("All GitHub repositories that aren't forks are cloned.")
 st.sidebar.text("Summary for all repositories are generated using cloc.")
 st.sidebar.text("These summaries are processed, aggregated and sent to GPT 3.5")
+st.sidebar.text("Only summaries sent to GPT, making it very cost efficient.")
 st.sidebar.text("Answer is extracted and response is shown.")
 st.sidebar.text("Deployed on Google Cloud Run.")
-
-
-st.sidebar.text("Least number of tokens are sent to OpenAI")
-st.sidebar.text("Since the code is public, I'll be deleting keys on 15/8/2023.")
-st.sidebar.text("Sorry for the inconvinence!")
 
 
 
@@ -68,6 +61,9 @@ if button1:
         st.write(response)
     else:
         # Continure if proper response is recieved from GitHub API
+        if not os.path.exists("data"):
+            os.mkdir("data")
+        
         uidloc = os.path.join("data", uid)
         if not os.path.exists(uidloc):
             os.mkdir(uidloc)

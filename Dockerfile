@@ -1,7 +1,15 @@
-FROM python:3.8
+FROM python:3.9
+ENV PYTHONUNBUFFERED True
+
 EXPOSE 8080
-WORKDIR /app
+
+# Copy local code to the container image.
+ENV APP_HOME /app
+WORKDIR $APP_HOME
 COPY . ./
+# RUN sudo apt install cloc -y
+
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
-RUN apt-get update && apt-get install -y --no-install-recommends \ cloc
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+
+CMD streamlit run --server.port 8080 --server.enableCORS false app.py

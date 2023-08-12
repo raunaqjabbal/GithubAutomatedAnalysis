@@ -6,12 +6,15 @@ import re
 from git import Repo
 import requests
 import stat
+import numpy as np
 
 @st.cache_data
 def output(gpt_answer, uid):
+    # Obtain username
     id = os.path.split(uid)[1]
-    header = st.header("Result")
     result=[]
+    
+    # Find ChatGPT mentioning any repository and create URL
     for i in os.listdir(uid):
         if(re.search(i,gpt_answer)):
             result.append(f"https://github.com/{id}/{i}")
@@ -20,13 +23,14 @@ def output(gpt_answer, uid):
 
 @st.cache_data
 def call_chatgpt(query, key):
+    # THis code calls OpenAI passing it the query, telling the model to figure out the most complex repository
     header = st.header("Calling ChatGPT")
 
     if os.path.isfile("keys"):
         import keys
         key = keys.openai_key
     
-    message_list=[{"role": "user", "content": "Tell me the most complex repository from thus data and tell me how: "+ query}]
+    message_list=[{"role": "user", "content": "Tell me the most complex repository from this data and justify your answer: "+ query}]
 
     data = {
         "model": "gpt-3.5-turbo",
@@ -54,26 +58,28 @@ def call_chatgpt(query, key):
         return None
 
 @st.cache_data
-def get_repo_summary(uid):
+def get_repo_summary(uid, exclude):
     from subprocess import run
     import subprocess
     
     header = st.header("Fetching Summaries")
-
     solutions=[]
 
+    # Call cloc to generate summaries for each repository
     for i in stqdm(os.listdir(uid)):
         # output = run(f"cloc {os.path.join(uid,i)}", capture_output=True).stdout.decode()
         path_to_repo = os.path.join(uid,i)
-        output = subprocess.getstatusoutput(f"cloc {path_to_repo}")
+        output = subprocess.getstatusoutput(f"./cloc {path_to_repo} --exclude-ext={exclude}")
         if output[0]==0:
             solutions.append(parse_cloc_output(output[1], i))
-
+        else:
+            st.write(output)
     
     return solutions
 
 @st.cache_data
 def get_query(solutions):
+    # All summaries are merged and converted to string form to give to OpenAI
     query = ""
     for i in solutions:
 
@@ -81,7 +87,6 @@ def get_query(solutions):
             # print(f"{key}: {value}")
             query+= f"{key}: {value}\n"
             
-        query+= "\nLanguage Breakdown:\n"
         for lang, info in i['Language Breakdown'].items():
             query+= f"{lang}: Files- {info['Files']}, Blank- {info['Blank']}, Comment- {info['Comment']}, Code- {info['Code']}\n"
         # print("\n\n\n\n")
@@ -95,7 +100,10 @@ def get_query(solutions):
 
 
 @st.cache_data
+
 def parse_cloc_output(output, name):
+    # Recieves string output from cloc and converts response into structured data
+    
     output = re.sub(' +', ' ', output)
     output = re.sub('\r', '\n', output)
     output = output.strip().split('\n')
@@ -106,10 +114,13 @@ def parse_cloc_output(output, name):
         if line!="":
             lines.append(line.strip())
     
-    
-    total_files = int(lines[0].split()[0])
+    total_files = None
     unique_files = None
     ignored_files = None
+    try:
+        total_files = int(lines[0].split()[0])
+    except:
+        None
     
     idx = 0
     
@@ -125,7 +136,8 @@ def parse_cloc_output(output, name):
             else:
                 idx = i+1
                 break
-             
+    
+                
     lang_breakdown = {}
     for line in range(idx, len(lines)):
         if lines[line].startswith("-"):
@@ -144,9 +156,9 @@ def parse_cloc_output(output, name):
     return {
         'Summary': {
             'Name': name,
-            'Total Files': total_files,
-            'Unique Files': unique_files,
-            'Ignored Files': ignored_files
+            # 'Total Files': total_files,
+            # 'Unique Files': unique_files,
+            # 'Ignored Files': ignored_files
         },
         'Language Breakdown': lang_breakdown
     }
@@ -154,11 +166,14 @@ def parse_cloc_output(output, name):
 
 
 def download_data(response, uid):
+    
+    # All repositories that are forks are ignored
     data = []
     for i in response:
         if i['fork']== False:
             data.append(i)
     
+    # repositories are downloaded
     header = st.header("Fetching Repositories")
     for i in stqdm(data):
         # Repo.clone_from(i['clone_url'], os.path.join(os.getcwd(), uid, i['name']))
@@ -170,6 +185,7 @@ def download_data(response, uid):
     st.success(f"Fetched {len(os.listdir(uid))} Repositories")        
     
 def rmtree():
+    # clears all repositories from all users 
     for root, dirs, files in os.walk("data", topdown=False):
         for name in files:
             filename = os.path.join(root, name)

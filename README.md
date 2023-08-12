@@ -8,7 +8,7 @@ How it works...
 
 All GitHub repositories that aren't forks are cloned.
 
-Summary for all repositories are generated using cloc.
+Summary for all repositories are generated using cloc, and certain filetypes can be ignored. 
 
 These summaries are processed, aggregated and sent to GPT 3.5
 

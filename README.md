@@ -16,4 +16,4 @@ Only summaries sent to GPT, making it very cost efficient.
 
 Answer is extracted and response is shown.
 
-Deployed on Google Cloud Run.
+Deployed on Google Cloud Run and made with SteamLit.

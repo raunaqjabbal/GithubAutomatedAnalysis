@@ -17,3 +17,8 @@ Only summaries sent to GPT, making it very cost efficient.
 Answer is extracted and response is shown.
 
 Deployed on Google Cloud Run and made with SteamLit.
+
+
+
+# gcloud builds submit --tag gcr.io/peak-woodland-395617/analysis  --project=peak-woodland-395617
+# gcloud run deploy --image gcr.io/peak-woodland-395617/analysis --platform managed  --project=peak-woodland-395617 --allow-unauthenticated
